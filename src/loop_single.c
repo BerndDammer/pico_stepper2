@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/timer.h"
-//#include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 
 #define CONSOLE_TIMEOUT 1000000

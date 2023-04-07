@@ -108,3 +108,7 @@ void encoder_init(void)
     encoder_irq_init();
 }
 
+int get_full_counter(void)
+{
+    return full_count;
+}

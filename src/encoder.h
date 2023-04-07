@@ -9,6 +9,7 @@
 #define ENCODER_H_
 
 void encoder_init(void);
+int get_full_counter(void);
 
 
 #endif /* ENCODER_H_ */

@@ -1,6 +1,7 @@
 #include "loop_bitbang.h"
 #include "blinker.h"
 #include "coils.h"
+#include "encoder.h"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -24,10 +25,11 @@ void menu_bitbang(void)
     printf("2 Half Stepping\n");
     printf("4 Quarter Stepping\n");
     printf("5 Gap Stepping\n");
-    printf("+ Increase Frequency\n");
-    printf("- Decrease Frequency\n");
+    printf("+ Increase Frequency / Push\n");
+    printf("- Decrease Frequency / Push\n");
     printf("r Reverse direction\n");
     printf("c Countdown\n");
+    printf("e encoder mode\n");
     printf("ESC  exit\n");
     printf("press key to select\n");
     printf("------------------------------------\n");
@@ -136,6 +138,8 @@ void loop_bitbang(void)
     int countdown = 0;
     int mode = 0;
     int step = 0;
+    int encoder_mode = false;
+    int push = 0;
 
     menu_bitbang();
     bitbang_init();
@@ -147,22 +151,40 @@ void loop_bitbang(void)
 
         if (c == PICO_ERROR_TIMEOUT)
         {
-            //printf("Bitbang Loop Counter %i\n", counter);
-            menu_counter++;
-            for (int i = 0; i < 4; i++)
+            if (encoder_mode)
             {
-                volatile int p = pins[i];
-                volatile int v = outs[mode][step][i];
-                gpio_put(p, v);
-                //gpio_put(pins[i], outs[mode][step][i]);
-            }
-            step = (forward ? ++step : --step) & 7;
-            if (countdown != 0)
-            {
-                countdown--;
-                if (countdown == 0)
+                int phase = get_full_counter();
+                phase += push;
+                phase %= 80;
+                phase /= 10;
+                phase &= 7;
+
+                for (int i = 0; i < 4; i++)
                 {
-                    mode = 0;
+                    volatile int p = pins[i];
+                    volatile int v = outs[mode][phase][i];
+                    gpio_put(p, v);
+                    //gpio_put(pins[i], outs[mode][step][i]);
+                }
+            }
+            else
+            {
+                menu_counter++;
+                for (int i = 0; i < 4; i++)
+                {
+                    volatile int p = pins[i];
+                    volatile int v = outs[mode][step][i];
+                    gpio_put(p, v);
+                    //gpio_put(pins[i], outs[mode][step][i]);
+                }
+                step = (forward ? ++step : --step) & 7;
+                if (countdown != 0)
+                {
+                    countdown--;
+                    if (countdown == 0)
+                    {
+                        mode = 0;
+                    }
                 }
             }
         }
@@ -183,22 +205,50 @@ void loop_bitbang(void)
                     mode = 4;
                 break;
                 case '+':
-                    delay = (int) ((double) delay / DSTEP);
-                    if (delay < TIMEOUT_MIN)
-                        delay = TIMEOUT_MIN;
-                    show_frequency(delay);
+                    if (encoder_mode)
+                    {
+                        printf("New Push value %i\n", ++push);
+                    }
+                    else
+                    {
+                        delay = (int) ((double) delay / DSTEP);
+                        if (delay < TIMEOUT_MIN)
+                            delay = TIMEOUT_MIN;
+                        show_frequency(delay);
+                    }
                 break;
                 case '-':
-                    delay = (int) ((double) delay * DSTEP);
-                    if (delay > TIMEOUT_MAX)
-                        delay = TIMEOUT_MAX;
-                    show_frequency(delay);
+                    if (encoder_mode)
+                    {
+                        printf("New Push value %i\n", --push);
+                    }
+                    else
+                    {
+                        delay = (int) ((double) delay * DSTEP);
+                        if (delay > TIMEOUT_MAX)
+                            delay = TIMEOUT_MAX;
+                        show_frequency(delay);
+                    }
                 break;
                 case 'r':
                     forward = !forward;
                 break;
                 case 'c':
                     countdown = STEPS_PER_ELECTRIC_WAVE * POLE_PAIR_COUNT * GEAR;
+                break;
+                case 'e':
+                    if (encoder_mode)
+                    {
+                        delay = TIMEOUT_MAX;
+                        step = 0;
+                        encoder_mode = false;
+                    }
+                    else
+                    {
+                        delay = TIMEOUT_MIN;
+                        encoder_mode = true;
+                        push = 0;
+                    }
                 break;
                 case ' ':
                 case '0':
