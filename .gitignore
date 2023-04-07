@@ -17,5 +17,7 @@ cmake_install.cmake
 *.txt
 #*.uf2
 
+!src/CMakeLists.txt
+
 CMakeCache.txt
 /build/
