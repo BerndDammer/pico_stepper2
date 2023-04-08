@@ -1,6 +1,7 @@
 #include "loop_single.h"
 #include "blinker.h"
 #include "motor_single.h"
+#include "encoder.h"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -57,8 +58,13 @@ void loop_single(void)
 
         if (c == PICO_ERROR_TIMEOUT)
         {
-            printf("Single Counter %i\n", counter);
+            //printf("Single Counter %i\n", counter);
             counter++;
+
+            int count = get_full_counter();
+            int phase = count % 80;
+            int step = (phase / 10) & 7;
+            printf("counter %i phase %i step %i\n", count, phase, step);
         }
         else
         {

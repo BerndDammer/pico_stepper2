@@ -9,7 +9,7 @@
 #include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 
-#define TIMEOUT_MIN 300
+#define TIMEOUT_MIN 100
 #define TIMEOUT_MAX 500000
 #define DSTEP 1.2
 
@@ -231,7 +231,17 @@ void loop_bitbang(void)
                     }
                 break;
                 case 'r':
-                    forward = !forward;
+                    if(encoder_mode)
+                    {
+                        if( push > 0)
+                            push -= 40;
+                        else
+                            push += 40;
+                    }
+                    else
+                    {
+                        forward = !forward;
+                    }
                 break;
                 case 'c':
                     countdown = STEPS_PER_ELECTRIC_WAVE * POLE_PAIR_COUNT * GEAR;

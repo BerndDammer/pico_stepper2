@@ -30,12 +30,15 @@ int fail_count = 0;
 #define TIMER_IRQ TIMER_IRQ_2
 #define SCAN_DELAY_US 20
 
-static int scan_time;
+//static int scan_time;
 volatile static long long counter = 0;
 
 static void scan_encoder_lines(void)
 {
     gpio_put(FLAG, true);
+
+    hw_clear_bits(&timer_hw->intr, 1u << TIMER_NUM);
+
     counter++;
 
     int act = (gpio_get_all() & 0X000C) >> 2;
@@ -69,9 +72,7 @@ static void scan_encoder_lines(void)
     }
     last_read = act;
 
-    hw_clear_bits(&timer_hw->intr, 1u << TIMER_NUM);
-
-    // stops after some ints ....
+    //stops after some ints ....
     //scan_time = scan_time + SCAN_DELAY_US;
     //timer_hw->alarm[TIMER_NUM] = scan_time;
 
@@ -92,10 +93,12 @@ void encoder_irq_init(void)
 
     irq_set_exclusive_handler(TIMER_IRQ, scan_encoder_lines);
     irq_set_enabled(TIMER_IRQ, true);
-    uint64_t target = timer_hw->timerawl + SCAN_DELAY_US;
 
-    scan_time = (uint32_t) target;
-    timer_hw->alarm[TIMER_NUM] = scan_time;
+//    uint64_t target = timer_hw->timerawl + SCAN_DELAY_US;
+//    scan_time = (uint32_t) target;
+//    timer_hw->alarm[TIMER_NUM] = scan_time;
+    timer_hw->alarm[TIMER_NUM] = timer_hw->timerawl + SCAN_DELAY_US;
+
     hw_set_bits(&timer_hw->inte, 1u << TIMER_NUM);
 }
 
