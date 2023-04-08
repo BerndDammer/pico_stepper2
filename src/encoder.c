@@ -8,7 +8,10 @@
 #include <stdbool.h>
 
 #include "pico/stdlib.h"
+
 #include "hardware/timer.h"
+#include "hardware/irq.h"
+
 #include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 
@@ -23,11 +26,17 @@ int full_count = 0;
 static int last_read = 0;
 int fail_count = 0;
 
-static repeating_timer_t encoder_timer;
+#define TIMER_NUM 2
+#define TIMER_IRQ TIMER_IRQ_2
+#define SCAN_DELAY_US 20
 
-static bool check(repeating_timer_t *rt)
+static int scan_time;
+volatile static long long counter = 0;
+
+static void scan_encoder_lines(void)
 {
     gpio_put(FLAG, true);
+    counter++;
 
     int act = (gpio_get_all() & 0X000C) >> 2;
     switch (act << 2 | last_read)
@@ -59,13 +68,35 @@ static bool check(repeating_timer_t *rt)
 
     }
     last_read = act;
+
+    hw_clear_bits(&timer_hw->intr, 1u << TIMER_NUM);
+
+    // stops after some ints ....
+    //scan_time = scan_time + SCAN_DELAY_US;
+    //timer_hw->alarm[TIMER_NUM] = scan_time;
+
+    // sometimes a bit later
+    timer_hw->alarm[TIMER_NUM] = timer_hw->timerawl + SCAN_DELAY_US;
+
     gpio_put(FLAG, false);
-    return true;
 }
+
+//void encoder_irq_init(void)
+//{
+//    add_repeating_timer_us( 20, check, NULL, &encoder_timer);
+//}
 
 void encoder_irq_init(void)
 {
-    add_repeating_timer_us( 20, check, NULL, &encoder_timer);
+    hardware_alarm_claim(TIMER_NUM);
+
+    irq_set_exclusive_handler(TIMER_IRQ, scan_encoder_lines);
+    irq_set_enabled(TIMER_IRQ, true);
+    uint64_t target = timer_hw->timerawl + SCAN_DELAY_US;
+
+    scan_time = (uint32_t) target;
+    timer_hw->alarm[TIMER_NUM] = scan_time;
+    hw_set_bits(&timer_hw->inte, 1u << TIMER_NUM);
 }
 
 void encoder_init(void)

@@ -11,6 +11,8 @@
 #include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 
+#include "blinker.h"
+
 #define CONSOLE_TIMEOUT 1000000
 
 
