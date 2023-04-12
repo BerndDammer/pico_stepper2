@@ -65,18 +65,19 @@ void on_pwm_wrap(void)
 
     volatile unsigned short a, b, c, d;
     a = phasetable[alpha];
-    alpha += 64;
+    alpha -= 64;
     b = phasetable[alpha];
-    alpha += 64;
+    alpha -= 64;
     c = phasetable[alpha];
-    alpha += 64;
+    alpha -= 64;
     d = phasetable[alpha];
-    alpha += 64;
+    alpha -= 64;
 
     pwm_set_chan_level(cs_mot1.slice, PWM_CHAN_A, a);
-    pwm_set_chan_level(cs_mot1.slice, PWM_CHAN_B, b);
-    pwm_set_chan_level(cs_mot2.slice, PWM_CHAN_A, c);
+    pwm_set_chan_level(cs_mot2.slice, PWM_CHAN_A, b);
+    pwm_set_chan_level(cs_mot1.slice, PWM_CHAN_B, c);
     pwm_set_chan_level(cs_mot2.slice, PWM_CHAN_B, d);
+
     /*
      pwm_set_chan_level(cs_mot1.slice, PWM_CHAN_A, phasetable[alpha]);
      alpha += 64;
@@ -94,11 +95,13 @@ void motor_table(void)
     int i;
     for (i = 0; i < 64; i++)
     {
-        phasetable[i] = i << 2;
+//        phasetable[i] = i << 2;
+        phasetable[i] = i * 3;
     }
     for (i = 0; i < 64; i++)
     {
-        phasetable[i + 64] = (~i & 63) << 2;
+//        phasetable[i + 64] = (~i & 63) << 2;
+        phasetable[i + 64] = (~i & 63) * 3;
     }
     for (i = 128; i < 256; i++)
     {
